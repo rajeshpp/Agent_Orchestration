@@ -1,0 +1,5 @@
+langflow
+flask>=2.0
+requests>=2.28
+flowise>=0.0.1  # FlowisePy SDK from Flowise (if available on pip). Otherwise use requests.
+python-dotenv
