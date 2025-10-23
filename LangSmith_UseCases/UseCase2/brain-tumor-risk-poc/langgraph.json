@@ -1,0 +1,8 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "brain-tumor-risk": "src.app:app"
+  }
+}
