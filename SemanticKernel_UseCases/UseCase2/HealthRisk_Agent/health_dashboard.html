@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Patient Risk Assessment Dashboard</title>
+    <style>
+        :root {
+            --color-primary: #2563eb;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-critical: #dc2626;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-text: #1e293b;
+            --color-text-secondary: #64748b;
+            --color-border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--color-text);
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: var(--color-surface);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            font-size: 36px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--color-surface);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+        }
+
+        .vital-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .vital-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .vital-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-normal {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .status-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-danger);
+        }
+
+        .assessment-card {
+            grid-column: 1 / -1;
+            background: var(--color-surface);
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .risk-low {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-success);
+            border: 2px solid var(--color-success);
+        }
+
+        .risk-moderate {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--color-warning);
+            border: 2px solid var(--color-warning);
+        }
+
+        .risk-high {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-danger);
+            border: 2px solid var(--color-danger);
+        }
+
+        .risk-critical {
+            background: rgba(220, 38, 38, 0.15);
+            color: var(--color-critical);
+            border: 2px solid var(--color-critical);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .assessment-content {
+            line-height: 1.8;
+            color: var(--color-text);
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--color-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .patient-input {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .patient-input input {
+            padding: 10px 16px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.3s ease;
+        }
+
+        .patient-input input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .controls {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>
+                <span class="header-icon">🏥</span>
+                Patient Health Risk Assessment
+            </h1>
+            <div class="controls">
+                <div class="patient-input">
+                    <input type="text" id="patientId" placeholder="Patient ID" value="P12345">
+                </div>
+                <button class="btn btn-primary" onclick="assessPatient()" id="assessBtn">
+                    <span>🔍</span>
+                    Analyze Patient
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing patient vital signs...</p>
+        </div>
+
+        <div id="vitalsGrid" class="grid" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Heart Rate</span>
+                    <span class="card-icon">❤️</span>
+                </div>
+                <div class="vital-value" id="heartRate">--</div>
+                <div class="vital-label">beats per minute</div>
+                <span class="vital-status" id="heartRateStatus">--</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Blood Pressure</span>
+                    <span class="card-icon">💉</span>
+                </div>
+                <div class="vital-value" id="bloodPressure">--/--</div>
+                <div class="vital-label">mmHg (Systolic/Diastolic)</div>
+                <span class="vital-status" id="bpStatus">--</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Temperature</span>
+                    <span class="card-icon">🌡️</span>
+                </div>
+                <div class="vital-value" id="temperature">--</div>
+                <div class="vital-label">°F</div>
+                <span class="vital-status" id="tempStatus">--</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Respiratory Rate</span>
+                    <span class="card-icon">🫁</span>
+                </div>
+                <div class="vital-value" id="respiratoryRate">--</div>
+                <div class="vital-label">breaths per minute</div>
+                <span class="vital-status" id="respStatus">--</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Oxygen Saturation</span>
+                    <span class="card-icon">🩺</span>
+                </div>
+                <div class="vital-value" id="oxygenSat">--</div>
+                <div class="vital-label">SpO₂ percentage</div>
+                <span class="vital-status" id="o2Status">--</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Patient ID</span>
+                    <span class="card-icon">👤</span>
+                </div>
+                <div class="vital-value" style="font-size: 24px;" id="patientIdDisplay">--</div>
+                <div class="vital-label">Current Assessment</div>
+            </div>
+        </div>
+
+        <div class="assessment-card" id="assessmentCard" style="display: none;">
+            <h2 style="margin-bottom: 16px; color: var(--color-text);">🤖 AI Health Risk Assessment</h2>
+            <div id="riskBadge"></div>
+            <div class="assessment-content" id="assessmentContent"></div>
+            <div class="timestamp" id="timestamp"></div>
+        </div>
+    </div>
+
+    <script>
+        async function assessPatient() {
+            const patientId = document.getElementById('patientId').value || 'P12345';
+            const assessBtn = document.getElementById('assessBtn');
+            const loading = document.getElementById('loading');
+            const vitalsGrid = document.getElementById('vitalsGrid');
+            const assessmentCard = document.getElementById('assessmentCard');
+
+            // Show loading
+            assessBtn.disabled = true;
+            loading.classList.add('active');
+            vitalsGrid.style.display = 'none';
+            assessmentCard.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/assess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ patient_id: patientId })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                // Update vitals
+                displayVitals(data.vitals, patientId);
+                displayAssessment(data.assessment);
+
+                // Show results
+                vitalsGrid.style.display = 'grid';
+                assessmentCard.style.display = 'block';
+
+            } catch (error) {
+                alert('Failed to connect to server. Make sure the Python server is running.');
+                console.error(error);
+            } finally {
+                loading.classList.remove('active');
+                assessBtn.disabled = false;
+            }
+        }
+
+        function displayVitals(vitals, patientId) {
+            // Patient ID
+            document.getElementById('patientIdDisplay').textContent = patientId;
+
+            // Heart Rate
+            document.getElementById('heartRate').textContent = vitals.heart_rate;
+            updateStatus('heartRateStatus', vitals.heart_rate, 60, 100);
+
+            // Blood Pressure
+            document.getElementById('bloodPressure').textContent = 
+                `${vitals.blood_pressure_systolic}/${vitals.blood_pressure_diastolic}`;
+            updateStatus('bpStatus', vitals.blood_pressure_systolic, 90, 120);
+
+            // Temperature
+            document.getElementById('temperature').textContent = vitals.temperature + '°F';
+            updateStatus('tempStatus', vitals.temperature, 97.7, 99.1);
+
+            // Respiratory Rate
+            document.getElementById('respiratoryRate').textContent = vitals.respiratory_rate;
+            updateStatus('respStatus', vitals.respiratory_rate, 12, 18);
+
+            // Oxygen Saturation
+            document.getElementById('oxygenSat').textContent = vitals.oxygen_saturation + '%';
+            updateStatus('o2Status', vitals.oxygen_saturation, 95, 100);
+        }
+
+        function updateStatus(elementId, value, min, max) {
+            const element = document.getElementById(elementId);
+            if (value >= min && value <= max) {
+                element.textContent = 'Normal';
+                element.className = 'vital-status status-normal';
+            } else if (value < min - 5 || value > max + 5) {
+                element.textContent = 'Critical';
+                element.className = 'vital-status status-danger';
+            } else {
+                element.textContent = 'Abnormal';
+                element.className = 'vital-status status-warning';
+            }
+        }
+
+        function displayAssessment(assessment) {
+            const riskBadge = document.getElementById('riskBadge');
+            const content = document.getElementById('assessmentContent');
+            
+            // Determine risk level
+            let riskClass = 'risk-low';
+            let riskText = 'LOW RISK';
+            
+            if (assessment.includes('CRITICAL')) {
+                riskClass = 'risk-critical';
+                riskText = '🚨 CRITICAL RISK';
+            } else if (assessment.includes('HIGH')) {
+                riskClass = 'risk-high';
+                riskText = 'HIGH RISK';
+            } else if (assessment.includes('MODERATE')) {
+                riskClass = 'risk-moderate';
+                riskText = 'MODERATE RISK';
+            }
+
+            riskBadge.innerHTML = `<span class="risk-badge ${riskClass}">${riskText}</span>`;
+            content.textContent = assessment;
+
+            // Update timestamp
+            document.getElementById('timestamp').textContent = 
+                'Assessment completed at: ' + new Date().toLocaleString();
+        }
+
+        // Allow Enter key to trigger assessment
+        document.getElementById('patientId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') assessPatient();
+        });
+
+        // Initial assessment on load
+        window.addEventListener('load', () => {
+            setTimeout(() => assessPatient(), 500);
+        });
+    </script>
+</body>
+</html>
