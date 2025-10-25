@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cancer Care Multi-Agent Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #eef2fb 0%, #d2e3fa 100%);
+            margin: 0;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: auto; }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 24px #0002;
+            margin: 2rem 0 0 0;
+            padding: 2rem;
+            transition: box-shadow 0.4s, transform 0.4s, opacity 0.3s;
+            opacity: 0;
+            transform: translateY(40px);
+            position: relative;
+        }
+        .card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .summary-card    { background: linear-gradient(90deg, #bbd6ff 70%, #e2ecff 100%);}
+        .imaging-card    { background: linear-gradient(90deg, #ffe3d7 60%, #fff0e2 100%);}
+        .pathology-card  { background: linear-gradient(90deg, #ffe6f1 55%, #ffeef8 100%);}
+        .risk-card       { background: linear-gradient(90deg, #d4ffe8 70%, #f0fff6 100%);}
+        .treatment-card  { background: linear-gradient(90deg, #fcfcb8 70%, #fafad2 100%);}
+        h1, h2 { color: #233366; }
+        .badge {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 2rem;
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 0.03em;
+        }
+        .badge-high      { background: #ff9090; color: #8d2222; }
+        .badge-moderate  { background: #ffea87; color: #857a04; }
+        .badge-low       { background: #73ff91; color: #1b6831; }
+        table { border-collapse: collapse; width: 100%; font-size: 1.05em; }
+        td    { padding: 7px 12px; }
+        tr:nth-child(odd) { background: #f6f9ff;}
+        tr td:first-child { font-weight: bold; color: #324480; }
+        ul { margin: 0; padding: 0 0 0 1.6em; }
+        li { margin-bottom: 0.6em; line-height: 1.45; }
+        button {
+            background: linear-gradient(90deg, #3266c8 50%, #44b3b4 100%);
+            color: #fff;
+            padding: 0.75rem 2.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 12px #44b3b440;
+            margin-bottom:0.8em;
+        }
+        em { color: #7b7980;}
+        .spinner {
+            margin: 0 auto 1.3em auto;
+            border: 0.30em solid #eee;
+            border-top: 0.30em solid #3266c8;
+            border-radius: 50%;
+            width: 2.5em;
+            height: 2.5em;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .agent-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 1em;
+            letter-spacing: 0.04em;
+        }
+        .card .card-header-agent {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1em;
+        }
+        .agent-number-dot {
+            display: inline-block;
+            width: 25px; height: 25px;
+            border-radius: 50%;
+            background: #233366;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            line-height: 25px;
+            font-size: 1em;
+            margin-right: 5px;
+            box-shadow: 0 2px 8px #23336625;
+        }
+        #editPanel { background: #fff; border-radius:12px; box-shadow:0 2px 8px #0001; padding: 1.2em; margin:0.4em 0;}
+        #inputFile { margin-left:1em; }
+        #manualInput { padding:0.7em; border-radius:8px; border:1px solid #ddd;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cancer Care Multi-Agent Dashboard</h1>
+        <button onclick="runPipeline()">Run Sample Case</button>
+        <input type="file" accept=".json" id="inputFile" onchange="handleFileUpload(event)">
+        <button onclick="toggleEditPanel()">Edit Input Manually</button>
+        <div id="editPanel" style="display:none; margin:1em 0;">
+            <textarea id="manualInput" rows="10" style="width:60%;font-size:1em;"></textarea>
+            <br>
+            <button onclick="runManualInput()">Run with Edited Input</button>
+        </div>
+        <div id="agentic-blocks"></div>
+    </div>
+    <script>
+    const agentStyles = [
+        'summary-card',     // 1: Patient Overview
+        'imaging-card',     // 2: Imaging Findings
+        'pathology-card',   // 3: Pathology & Genomics
+        'risk-card',        // 4: Risk Stratification & Trials
+        'treatment-card'    // 5: Treatment Recommendation
+    ];
+    const agentTitles = [
+        "Patient Overview",
+        "Imaging Findings",
+        "Pathology & Genomics",
+        "Risk Stratification & Trials",
+        "Treatment Recommendation"
+    ];
+    let globalInput = null;
+
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                let input = JSON.parse(evt.target.result);
+                globalInput = input;
+                document.getElementById('manualInput').value = JSON.stringify(input, null, 2);
+                runPipeline(input);
+            } catch (ex) {
+                alert("Invalid JSON file!");
+            }
+        }
+        reader.readAsText(file);
+    }
+
+    function toggleEditPanel() {
+        const panel = document.getElementById('editPanel');
+        panel.style.display = panel.style.display === "none" ? "block" : "none";
+        if (!globalInput) {
+            document.getElementById('manualInput').value = JSON.stringify({
+                clinical: {
+                    name: "Jane Smith",
+                    age: "52",
+                    sex: "F",
+                    symptoms: "Persistent cough, chest pain",
+                    family_history: "Mother - breast cancer",
+                    prior_cancer: "None"
+                },
+                imaging: {
+                    findings: "Lung mass, 3.2cm, upper lobe",
+                    size: "3.2cm",
+                    location: "Right upper lobe",
+                    type: "Lung CT"
+                },
+                pathology: {
+                    findings: "Adenocarcinoma, TTF-1+",
+                    markers: "KRAS mutation"
+                }
+            }, null, 2);
+        }
+    }
+
+    async function runManualInput() {
+        let val = document.getElementById('manualInput').value;
+        try {
+            let input = JSON.parse(val);
+            runPipeline(input);
+        } catch (ex) {
+            alert("Invalid JSON in manual edit!");
+        }
+    }
+
+    function renderPatientSummary(mainText) {
+        const n = (str, def) => ((str||'').match(/\*\*Name:\*\*\s*([^*]*)/)||[])[1] || def;
+        const a = (str, def) => ((str||'').match(/\*\*Age:\*\*\s*([^*]*)/)||[])[1] || def;
+        const s = (str, def) => ((str||'').match(/\*\*Sex:\*\*\s*([^*]*)/)||[])[1] || def;
+        const sy = (str, def) => ((str||'').match(/\*\*Symptoms:\*\*\s*([^*]*)/)||[])[1] || def;
+        const fh = (str, def) => ((str||'').match(/\*\*Family History:\*\*\s*([^*]*)/)||[])[1]|| 
+                    ((str||'').match(/\*\*Family history[^:]*:\*\*\s*([^*]*)/)||[])[1]|| def;
+        const pc = (str, def) => ((str||'').match(/\*\*Prior Cancer:\*\*\s*([^*]*)/)||[])[1] || def;
+        const r = (str, def) => ((str||'').match(/\*\*Risk Factors:\*\*\s*([^*]*)/)||[])[1] || def;
+        const sum = (str, def) => ((str||'').match(/\*\*Summary:\*\*\s*([^*]*)/)||[])[1] || "";
+        return `
+        <table>
+            <tr><td>Name</td><td>${n(mainText,"-")}</td></tr>
+            <tr><td>Age</td><td>${a(mainText,"-")}</td></tr>
+            <tr><td>Sex</td><td>${s(mainText,"-")}</td></tr>
+            <tr><td>Symptoms</td><td>${sy(mainText,"-")}</td></tr>
+            <tr><td>Family History</td><td>${fh(mainText,"-")}</td></tr>
+            <tr><td>Prior Cancer</td><td>${pc(mainText,"-")}</td></tr>
+            <tr><td>Risk Factors</td><td>${r(mainText,"-")}</td></tr>
+        </table>
+        <p style="margin-top:1em;"><b>Summary:</b> ${sum(mainText,"")}</p>
+        `;
+    }
+    function parseListFromSection(text, sectionStart) {
+        let i = text.indexOf(sectionStart);
+        if (i === -1) return '';
+        let nextHash = text.indexOf("###", i+1);
+        let block = text.substring(i, nextHash !==-1 ? nextHash : undefined);
+        let lines = block.split(/\n|-/).map(l=>l.replace(/^(\*+|#+|\s+|\s*\d+\.)/,'').trim()).filter(s=>s && !s.startsWith(sectionStart));
+        return lines.map(x => `<li>${x}</li>`).join('');
+    }
+    function renderImaging(mainText) {
+        let ul = [];
+        let mod = (mainText.match(/Modality:\s*([\w\s]+)/i)||[])[1];
+        let finding = (mainText.match(/mass,[\s\S]{0,60}/i)||[])[0];
+        if (mod) ul.push(`<li><b>Modality:</b> ${mod}</li>`);
+        if (finding) ul.push(`<li><b>Key Finding:</b> ${finding}</li>`);
+        ul.push(parseListFromSection(mainText, 'Staging'));
+        ul.push(parseListFromSection(mainText, 'Urgent Concerns'));
+        ul.push(parseListFromSection(mainText, 'Next Steps'));
+        return `<ul>${ul.join('')}</ul>`;
+    }
+    function renderPathology(mainText) {
+        let biop = (mainText.match(/Biopsy[^:]*:\s*([\w,\s\+\-]+)/i)||[])[1];
+        let mk = (mainText.match(/Markers?:\s*([^*]+)/i)||[])[1];
+        let prog = (mainText.match(/Prognosis:[^\n]*/i)||[])[0];
+        let th = (mainText.match(/Therapeutic[^:]*:\s*([^*]+)/i)||[])[1];
+        return `<ul>
+            <li><b>Biopsy:</b> ${biop||'-'}</li>
+            <li><b>Markers:</b> ${mk||'-'}</li>
+            <li><b>Prognosis:</b> ${prog ? prog.replace("Prognosis:",""):"-"}</li>
+            <li><b>Therapeutic Implications:</b> ${th||'-'}</li>
+        </ul>`;
+    }
+    function renderRisk(mainText) {
+        let orisk = (mainText.match(/Overall Risk:\s*([^\n,\.\*]+)/i)||[])[1]|| (mainText.match(/(low|high|intermed|agg|meta)/i)||[])[1] || "-";
+        let trial = (mainText.match(/Recommended Trials?:\s*([^\n,\.\*]+)/i)||[])[1] || "-";
+        let elig = (mainText.match(/Eligibility[^:]*:\s*([^\n]*)/i)||[])[1] || "-";
+        let badge = orisk.toLowerCase().includes("high") ? "badge-high" : orisk.toLowerCase().includes("mod") ? "badge-moderate" : "badge-low";
+        return `<ul>
+            <li><b>Overall Risk:</b> <span class="badge ${badge}">${orisk||'-'}</span></li>
+            <li><b>Recommended Trials:</b> ${trial}</li>
+            <li><b>Eligibility Criteria:</b> ${elig}</li>
+        </ul>`;
+    }
+    function renderTreatment(mainText) {
+        let plan = (mainText.match(/Plan:\s*([^\n]*)/i)||[])[1] || "-";
+        let outcome = (mainText.match(/Outcomes?:\s*([^\n]*)/i)||[])[1] || "-";
+        let rationale = (mainText.match(/Rationale:\s*([^\n]*)/i)||[])[1] || "-";
+        let risks = (mainText.match(/Potential Risks?:\s*([^\n]*)/i)||[])[1] || "-";
+        return `<ul>
+            <li><b>Guideline-Based Plan:</b> ${plan}</li>
+            <li><b>Possible Outcomes:</b> ${outcome}</li>
+            <li><b>Rationale:</b> ${rationale}</li>
+            <li><b>Potential Risks:</b> ${risks}</li>
+        </ul>`;
+    }
+    function showAgentCard(cardHtml, index) {
+        let blocks = document.getElementById('agentic-blocks');
+        let cardDiv = document.createElement('div');
+        cardDiv.className = `card ${agentStyles[index]}`;
+        cardDiv.id = `agent-card${index}`;
+        cardDiv.innerHTML = `
+            <div class="card-header-agent">
+                <span class="agent-number-dot">${index+1}</span>
+                <span class="agent-title">${agentTitles[index]}</span>
+            </div>
+            <div class="agent-spinner" style="text-align:center;">
+               <div class="spinner"></div>
+               <b>Agent Loading...</b>
+            </div>
+        `;
+        blocks.appendChild(cardDiv);
+        setTimeout(()=>{
+            cardDiv.querySelector('.agent-spinner').style.display='none';
+            cardDiv.innerHTML += cardHtml;
+            cardDiv.classList.add('active');
+        }, 1700 + 900*Math.random());
+    }
+    async function runPipeline(inputPreset) {
+        document.getElementById('agentic-blocks').innerHTML = "";
+        let sampleInput = inputPreset || {
+            clinical: {
+                name: "Jane Smith",
+                age: "52",
+                sex: "F",
+                symptoms: "Persistent cough, chest pain",
+                family_history: "Mother - breast cancer",
+                prior_cancer: "None"
+            },
+            imaging: {
+                findings: "Lung mass, 3.2cm, upper lobe",
+                size: "3.2cm",
+                location: "Right upper lobe",
+                type: "Lung CT"
+            },
+            pathology: {
+                findings: "Adenocarcinoma, TTF-1+",
+                markers: "KRAS mutation"
+            }
+        };
+        globalInput = sampleInput;
+        let blocks = document.getElementById('agentic-blocks');
+        blocks.innerHTML = "<div class='card summary-card active' style='text-align:center;'><span style='font-size:2em;'>🤖</span><br><div class='spinner'></div><br>Initializing Agent Pipeline...</div>";
+        let res = await fetch('/api/run', {
+            method: "POST",
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(sampleInput)
+        });
+        let data = await res.json();
+        setTimeout(()=>{
+            blocks.innerHTML = "";
+            const renderers = [
+                renderPatientSummary, renderImaging, renderPathology, renderRisk, renderTreatment
+            ];
+            const keys = ["clinical","imaging","pathology","risk","treatment"];
+            let i = 0;
+            function nextCard() {
+                if (i >= renderers.length) return;
+                showAgentCard(renderers[i](data[keys[i]]||""), i);
+                i++;
+                if (i < renderers.length)
+                    setTimeout(nextCard, 2300);
+            }
+            nextCard();
+        }, 1800);
+    }
+    </script>
+</body>
+</html>
