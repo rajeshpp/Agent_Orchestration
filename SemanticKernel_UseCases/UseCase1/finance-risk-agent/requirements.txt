@@ -1,0 +1,4 @@
+semantic-kernel
+aiohttp
+numpy
+python-dotenv
