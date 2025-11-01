@@ -11,6 +11,6 @@ A CrewAI-based MVP that simulates a healthcare triage assistant with two collabo
 ### Run
 ```bash
 pip install -r requirements.txt
-export OPEN_AI_KEY=.....
+export OPENAI_API_KEY=.....
 python main.py
 ```
