@@ -1,0 +1,34 @@
+{
+  "angina": {
+    "name": "Angina",
+    "symptoms": ["chest pain", "shortness of breath", "pain when exerting", "pressure in chest", "radiating arm pain"],
+    "red_flags": ["chest pain", "sweating", "fainting", "severe shortness of breath"],
+    "recommended_tests": ["ECG", "Cardiac enzymes", "Stress test"],
+    "advice": ["Seek urgent cardiology evaluation", "Avoid strenuous activity until evaluated"],
+    "severity": "high"
+  },
+  "acid_reflux": {
+    "name": "Acid Reflux (GERD)",
+    "symptoms": ["heartburn", "acidic taste", "chest discomfort", "regurgitation"],
+    "red_flags": ["difficulty swallowing", "unintended weight loss", "vomiting blood"],
+    "recommended_tests": ["Trial of antacid", "endoscopy if alarm features"],
+    "advice": ["Avoid large meals before bed", "OTC antacids, see GI if persistent"],
+    "severity": "moderate"
+  },
+  "common_cold": {
+    "name": "Common Cold",
+    "symptoms": ["runny nose", "sore throat", "cough", "sneezing", "mild fever"],
+    "red_flags": ["high fever", "shortness of breath", "chest pain"],
+    "recommended_tests": ["None usually", "COVID/Flu test if indicated"],
+    "advice": ["Rest, hydration, symptomatic care", "See clinician if worsening"],
+    "severity": "low"
+  },
+  "viral_pharyngitis": {
+    "name": "Viral Pharyngitis",
+    "symptoms": ["sore throat", "fever", "swollen lymph nodes", "cough"],
+    "red_flags": ["severe difficulty swallowing", "drooling", "high fever"],
+    "recommended_tests": ["Throat exam", "Rapid strep test if bacterial suspected"],
+    "advice": ["Salt water gargles", "analgesics as needed", "See doctor if severe"],
+    "severity": "low"
+  }
+}
