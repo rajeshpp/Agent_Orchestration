@@ -1,0 +1,9 @@
+crewai
+crewai[tools]
+openai
+langchain
+python-dotenv
+googlemaps
+sqlalchemy
+pymysql
+requests
